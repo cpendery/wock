@@ -18,3 +18,13 @@ const (
 	ErrorMessage     MessageType = 6
 	TimeoutMessage   MessageType = 7
 )
+
+type MockedHost struct {
+	Host      string
+	Directory string
+}
+
+type MockMessageData struct {
+	Host      string `json:"host"`
+	Directory string `json:"dir"`
+}

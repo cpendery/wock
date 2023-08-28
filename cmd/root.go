@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/cpendery/wock/admin"
@@ -44,12 +46,41 @@ func rootExec(cmd *cobra.Command, args []string) error {
 		}
 		defer c.Close()
 		host := args[0]
-		err = c.Mock(host)
+		dir := args[1]
+		absDir, err := validateDirectory(dir)
+		if err != nil {
+			return err
+		}
+		err = c.Mock(host, *absDir)
 		if err != nil {
 			return fmt.Errorf("failed to mock host %s: %w", host, err)
 		}
 	}
 	return nil
+}
+
+func validateDirectory(userInput string) (*string, error) {
+	var dir string
+	if filepath.IsAbs(userInput) {
+		dir = userInput
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("unable to check working directory: %w", err)
+		}
+		dir = filepath.Join(wd, userInput)
+	}
+
+	fileinfo, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return nil, errors.New("unable to serve %s as it doesn't exist")
+	} else if err != nil {
+		return nil, fmt.Errorf("unable to validate directory exists: %w", err)
+	} else if !fileinfo.IsDir() {
+		return nil, errors.New("unable to serve %s as it isn't a directory")
+	} else {
+		return &dir, nil
+	}
 }
 
 func Execute() {

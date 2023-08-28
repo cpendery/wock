@@ -115,8 +115,12 @@ func (c *Client) CheckStatus() (*[]string, error) {
 	}
 }
 
-func (c *Client) Mock(host string) error {
-	if err := c.SendMessage(model.MockMessage, []byte(host)); err != nil {
+func (c *Client) Mock(host string, directory string) error {
+	mockMessage, err := json.Marshal(model.MockMessageData{Host: host, Directory: directory})
+	if err != nil {
+		return fmt.Errorf("unable to create mock message: %w", err)
+	}
+	if err := c.SendMessage(model.MockMessage, mockMessage); err != nil {
 		return fmt.Errorf("unable to send mock message: %w", err)
 	}
 	resp := <-c.received
