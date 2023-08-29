@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ complete documentation is available at https://github.com/cpendery/wock`,
 	}
 )
 
-func rootExec(cmd *cobra.Command, args []string) error {
+func startDaemon() {
 	daemonRunning := pipe.IsOpen()
 	if !daemonRunning && !admin.IsAdmin() {
 		admin.RunAsElevated()
@@ -38,6 +37,10 @@ func rootExec(cmd *cobra.Command, args []string) error {
 	if !daemonRunning && admin.IsAdmin() {
 		daemon.NewDaemon().Start()
 	}
+}
+
+func rootExec(cmd *cobra.Command, args []string) error {
+	startDaemon()
 	if !admin.IsAdmin() {
 		time.Sleep(1 * time.Second)
 		c, err := client.NewClient()
@@ -73,11 +76,11 @@ func validateDirectory(userInput string) (*string, error) {
 
 	fileinfo, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-		return nil, errors.New("unable to serve %s as it doesn't exist")
+		return nil, fmt.Errorf("unable to serve %s as it doesn't exist", dir)
 	} else if err != nil {
 		return nil, fmt.Errorf("unable to validate directory exists: %w", err)
 	} else if !fileinfo.IsDir() {
-		return nil, errors.New("unable to serve %s as it isn't a directory")
+		return nil, fmt.Errorf("unable to serve %s as it isn't a directory", dir)
 	} else {
 		return &dir, nil
 	}

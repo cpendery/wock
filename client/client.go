@@ -132,3 +132,17 @@ func (c *Client) Mock(host string, directory string) error {
 		return errors.New("mock request failed")
 	}
 }
+
+func (c *Client) Clear() error {
+	if err := c.SendMessage(model.ClearMessage, []byte{}); err != nil {
+		return fmt.Errorf("unable to send clear message: %w", err)
+	}
+	resp := <-c.received
+
+	switch resp.MsgType {
+	case model.SuccessMessage:
+		return nil
+	default:
+		return errors.New("clear request failed")
+	}
+}

@@ -101,6 +101,18 @@ func (d *Daemon) handleMessage(msg model.Message) {
 		}
 		go d.httpServer()
 		go d.httpsServer()
+	case model.ClearMessage:
+		slog.Debug("received clear message")
+		hosts.ClearHosts()
+		d.mockedHosts = []model.MockedHost{}
+		if err := d.sendMessage(
+			model.Message{MsgType: model.SuccessMessage},
+			msg.ClientId,
+			conn,
+		); err != nil {
+			slog.Error("failed to response to a clear message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
+			return
+		}
 	}
 }
 
