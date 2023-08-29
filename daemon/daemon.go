@@ -113,6 +113,16 @@ func (d *Daemon) handleMessage(msg model.Message) {
 			slog.Error("failed to response to a clear message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
 			return
 		}
+	case model.StopMessage:
+		slog.Debug("received stop message")
+		if err := d.sendMessage(
+			model.Message{MsgType: model.SuccessMessage},
+			msg.ClientId,
+			conn,
+		); err != nil {
+			slog.Error("failed to response to a stop message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
+		}
+		os.Exit(0)
 	}
 }
 
@@ -144,7 +154,7 @@ func (d *Daemon) generateNewCerts() error {
 
 func (d *Daemon) httpsServer() {
 	mux := http.NewServeMux()
-	d.serverHttp = http.Server{
+	d.serverHttps = http.Server{
 		Handler: mux,
 		Addr:    ":443",
 	}
@@ -159,7 +169,7 @@ func (d *Daemon) httpsServer() {
 		}
 	})
 	slog.Debug("starting new https server")
-	if err := d.serverHttp.ListenAndServeTLS(cert.WockCertFile, cert.WockKeyFile); err != nil {
+	if err := d.serverHttps.ListenAndServeTLS(cert.WockCertFile, cert.WockKeyFile); err != nil {
 		if err != http.ErrServerClosed {
 			slog.Error("https server failed", slog.String("error", err.Error()))
 		} else {
@@ -215,11 +225,7 @@ func (d *Daemon) handleClient(c net.Conn) {
 }
 
 func NewDaemon() *Daemon {
-	logFile, err := os.Create("")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	logger := slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 	return &Daemon{
 		mockedHosts: []model.MockedHost{},

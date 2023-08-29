@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"time"
 
 	"github.com/cpendery/wock/model"
@@ -17,6 +18,10 @@ import (
 
 const (
 	clientTimeout = 5 * time.Second
+)
+
+var (
+	ErrUnableToDialDaemon = errors.New("unable to dial daemon")
 )
 
 type Client struct {
@@ -31,7 +36,7 @@ func NewClient() (*Client, error) {
 	serverConnection, err := pipe.DialServer()
 	if err != nil {
 		slog.Debug("unable to dial daemon", slog.String("error", err.Error()))
-		return nil, errors.New("unable to dial daemon")
+		return nil, ErrUnableToDialDaemon
 	}
 	incomingListener, err := pipe.ClientListen(clientId)
 	if err != nil {
@@ -77,7 +82,11 @@ func (c *Client) SendMessage(msgType model.MessageType, data []byte) error {
 }
 
 func (c *Client) readIncomingMessages() {
-	conn, _ := c.incoming.Accept()
+	conn, err := c.incoming.Accept()
+	if err != nil {
+		slog.Error("failed to accept incoming connection", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	for {
@@ -144,5 +153,19 @@ func (c *Client) Clear() error {
 		return nil
 	default:
 		return errors.New("clear request failed")
+	}
+}
+
+func (c *Client) Stop() error {
+	if err := c.SendMessage(model.StopMessage, []byte{}); err != nil {
+		return fmt.Errorf("unable to send stop message: %w", err)
+	}
+	resp := <-c.received
+
+	switch resp.MsgType {
+	case model.SuccessMessage:
+		return nil
+	default:
+		return errors.New("stop request failed")
 	}
 }
