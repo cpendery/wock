@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 const (
 	windowsHostFile = "C:\\Windows\\System32\\drivers\\etc\\hosts"
+	unixHostsFile   = "/etc/hosts"
 
 	wockSourceTag = "source:wock"
 )
@@ -27,6 +29,10 @@ func hostFile() string {
 	switch runtime.GOOS {
 	case "windows":
 		hostFilePath = windowsHostFile
+	case "linux", "darwin":
+		hostFilePath = unixHostsFile
+	default:
+		log.Fatal("unsupported os")
 	}
 	return hostFilePath
 }
