@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(daemonCmd)
+	rootCmd.AddCommand(statusCmd)
 }
 
-var daemonCmd = &cobra.Command{
+var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "check the current status of the wock daemon",
 	Args:  cobra.ExactArgs(0),

@@ -10,9 +10,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/cpendery/wock/cert"
 	"github.com/cpendery/wock/hosts"
 	"github.com/cpendery/wock/model"
 	"github.com/cpendery/wock/pipe"
@@ -92,20 +94,77 @@ func (d *Daemon) handleMessage(msg model.Message) {
 			slog.Error("failed to shutdown http server", slog.String("error", err.Error()))
 			return
 		}
+		if err := d.serverHttps.Shutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown https server", slog.String("error", err.Error()))
+			return
+		}
 		slog.Debug("begin creation of http/s servers")
+		if err := d.generateNewCerts(); err != nil {
+			slog.Error("failed to generate new certs", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
 		go d.httpServer()
+		go d.httpsServer()
+	}
+}
+
+func create(p string) error {
+	if err := os.MkdirAll(filepath.Dir(p), 0770); err != nil {
+		return err
+	}
+	f, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	f.Close()
+	return nil
+}
+
+func (d *Daemon) generateNewCerts() error {
+	var hosts []string
+	for _, mockedHost := range d.mockedHosts {
+		hosts = append(hosts, mockedHost.Host)
+	}
+	if err := create(cert.WockCertFile); err != nil {
+		return fmt.Errorf("failed to create cert file: %w", err)
+	}
+	if err := create(cert.WockKeyFile); err != nil {
+		return fmt.Errorf("failed to create key file: %w", err)
+	}
+	return cert.CreateCert(hosts)
+}
+
+func (d *Daemon) httpsServer() {
+	mux := http.NewServeMux()
+	d.serverHttp = http.Server{
+		Handler: mux,
+		Addr:    ":443",
+	}
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		host := strings.Split(r.Host, ":")[0]
+		for _, mockedHost := range d.mockedHosts {
+			slog.Debug(host, "mocked", mockedHost.Host, "dir", mockedHost.Directory)
+			if mockedHost.Host == host {
+				server := http.FileServer(http.Dir(mockedHost.Directory))
+				server.ServeHTTP(w, r)
+			}
+		}
+	})
+	slog.Debug("starting new https server")
+	if err := d.serverHttp.ListenAndServeTLS(cert.WockCertFile, cert.WockKeyFile); err != nil {
+		if err != http.ErrServerClosed {
+			slog.Error("https server failed", slog.String("error", err.Error()))
+		} else {
+			slog.Debug("https server shutdown", slog.String("error", err.Error()))
+		}
 	}
 }
 
 func (d *Daemon) httpServer() {
-	defer func() {
-		if r := recover(); r != nil {
-			slog.Debug("recovered from panic", "r", r)
-		}
-	}()
 	mux := http.NewServeMux()
 	d.serverHttp = http.Server{
 		Handler: mux,
+		Addr:    ":80",
 	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		host := strings.Split(r.Host, ":")[0]
