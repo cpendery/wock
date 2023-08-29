@@ -169,3 +169,19 @@ func (c *Client) Stop() error {
 		return errors.New("stop request failed")
 	}
 }
+
+func (c *Client) Remove(host string) error {
+	if err := c.SendMessage(model.UnmockMessage, []byte(host)); err != nil {
+		return fmt.Errorf("unable to send remove message: %w", err)
+	}
+	resp := <-c.received
+
+	switch resp.MsgType {
+	case model.SuccessMessage:
+		return nil
+	case model.ErrorMessage:
+		return errors.New(string(resp.Data))
+	default:
+		return errors.New("remove request failed")
+	}
+}

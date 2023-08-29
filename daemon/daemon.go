@@ -129,7 +129,29 @@ func (d *Daemon) handleMessage(msg model.Message) {
 			slog.Error("failed to response to a stop message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
 		}
 		os.Exit(0)
+	case model.UnmockMessage:
+		slog.Debug("received unmock message")
+		host := string(msg.Data)
+		if _, ok := d.mockedHosts[host]; !ok {
+			if err := d.sendMessage(
+				model.Message{MsgType: model.ErrorMessage, Data: []byte(fmt.Sprintf("host %s is not being wocked", host))},
+				msg.ClientId,
+				conn,
+			); err != nil {
+				slog.Error("failed to response to a unmock message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
+			}
+		} else {
+			delete(d.mockedHosts, host)
+			if err := d.sendMessage(
+				model.Message{MsgType: model.SuccessMessage},
+				msg.ClientId,
+				conn,
+			); err != nil {
+				slog.Error("failed to response to a unmock message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
+			}
+		}
 	}
+
 }
 
 func create(p string) error {

@@ -47,11 +47,6 @@ func printDaemonStatus(hosts *[]model.MockedHost) {
 }
 
 func runStatusCmd(_ *cobra.Command, _ []string) {
-	defer func() {
-		if r := recover(); r != nil {
-			slog.Debug("recovered from panic in status command")
-		}
-	}()
 	c, err := client.NewClient()
 	if err != nil {
 		slog.Debug("failed to create client", slog.String("error", err.Error()))
