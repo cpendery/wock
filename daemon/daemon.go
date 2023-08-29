@@ -21,7 +21,7 @@ import (
 )
 
 type Daemon struct {
-	mockedHosts []model.MockedHost
+	mockedHosts map[string]model.MockedHost
 	lock        sync.RWMutex
 	serverHttp  http.Server
 	serverHttps http.Server
@@ -48,7 +48,11 @@ func (d *Daemon) handleMessage(msg model.Message) {
 	defer conn.Close()
 	switch msg.MsgType {
 	case model.StatusMessage:
-		data, err := json.Marshal(d.mockedHosts)
+		var mockedHosts []model.MockedHost
+		for _, mockedHost := range d.mockedHosts {
+			mockedHosts = append(mockedHosts, mockedHost)
+		}
+		data, err := json.Marshal(mockedHosts)
 		if err != nil {
 			slog.Error("failed to marshal status response", slog.String("error", err.Error()))
 			return
@@ -83,7 +87,7 @@ func (d *Daemon) handleMessage(msg model.Message) {
 			slog.Error("failed to response to a mock message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
 			return
 		}
-		d.mockedHosts = append(d.mockedHosts, model.MockedHost{Host: host, Directory: mockMessageData.Directory})
+		d.mockedHosts[host] = model.MockedHost{Host: host, Directory: mockMessageData.Directory}
 
 		slog.Debug("starting server http/s shutdowns")
 		if err := d.serverHttp.Shutdown(context.Background()); err != nil {
@@ -104,7 +108,9 @@ func (d *Daemon) handleMessage(msg model.Message) {
 	case model.ClearMessage:
 		slog.Debug("received clear message")
 		hosts.ClearHosts()
-		d.mockedHosts = []model.MockedHost{}
+		for k := range d.mockedHosts {
+			delete(d.mockedHosts, k)
+		}
 		if err := d.sendMessage(
 			model.Message{MsgType: model.SuccessMessage},
 			msg.ClientId,
@@ -228,7 +234,7 @@ func NewDaemon() *Daemon {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 	return &Daemon{
-		mockedHosts: []model.MockedHost{},
+		mockedHosts: make(map[string]model.MockedHost),
 		lock:        sync.RWMutex{},
 		serverHttp: http.Server{
 			Addr: ":80",
