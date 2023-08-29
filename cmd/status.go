@@ -3,9 +3,12 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/cpendery/wock/client"
+	"github.com/cpendery/wock/model"
 	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +23,7 @@ var statusCmd = &cobra.Command{
 	Run:   runStatusCmd,
 }
 
-func printDaemonStatus(hosts *[]string) {
+func printDaemonStatus(hosts *[]model.MockedHost) {
 	if hosts == nil {
 		fmt.Print("\n")
 		fmt.Printf("wock daemon [%s]\n", color.RedString("offline"))
@@ -28,10 +31,18 @@ func printDaemonStatus(hosts *[]string) {
 		fmt.Print("\n")
 		fmt.Printf("wock daemon [%s]\n", color.GreenString("online"))
 		fmt.Print("\n")
-		fmt.Println("mocked hosts:")
+		data := [][]string{}
 		for _, host := range *hosts {
-			fmt.Printf("> %s\n", host)
+			data = append(data, []string{host.Host, host.Directory})
 		}
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Mocked Host", "Directory Served"})
+		for _, v := range data {
+			table.Append(v)
+		}
+		table.SetBorder(false)
+		table.Render()
 	}
 }
 

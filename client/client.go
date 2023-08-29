@@ -96,7 +96,7 @@ func (c *Client) readIncomingMessages() {
 	}
 }
 
-func (c *Client) CheckStatus() (*[]string, error) {
+func (c *Client) CheckStatus() (*[]model.MockedHost, error) {
 	if err := c.SendMessage(model.StatusMessage, []byte{}); err != nil {
 		return nil, fmt.Errorf("unable to send status message: %w", err)
 	}
@@ -104,7 +104,7 @@ func (c *Client) CheckStatus() (*[]string, error) {
 
 	switch resp.MsgType {
 	case model.SuccessMessage:
-		var hosts []string
+		var hosts []model.MockedHost
 		err := json.Unmarshal(resp.Data, &hosts)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read status response: %w", err)

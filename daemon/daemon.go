@@ -48,11 +48,7 @@ func (d *Daemon) handleMessage(msg model.Message) {
 	defer conn.Close()
 	switch msg.MsgType {
 	case model.StatusMessage:
-		var mockedHosts []string
-		for _, mockedHost := range d.mockedHosts {
-			mockedHosts = append(mockedHosts, mockedHost.Host)
-		}
-		data, err := json.Marshal(mockedHosts)
+		data, err := json.Marshal(d.mockedHosts)
 		if err != nil {
 			slog.Error("failed to marshal status response", slog.String("error", err.Error()))
 			return
