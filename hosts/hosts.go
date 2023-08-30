@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
-	"syscall"
 
-	"golang.org/x/sys/windows"
+	"golang.org/x/net/idna"
 )
 
 const (
@@ -18,6 +19,10 @@ const (
 	unixHostsFile   = "/etc/hosts"
 
 	wockSourceTag = "source:wock"
+)
+
+var (
+	hostnameRegex = regexp.MustCompile(`(?i)^(\*\.)?[0-9a-z_-]([0-9a-z._-]*[0-9a-z_-])?$`)
 )
 
 type UpdateResult struct {
@@ -32,9 +37,18 @@ func hostFile() string {
 	case "linux", "darwin":
 		hostFilePath = unixHostsFile
 	default:
-		log.Fatal("unsupported os")
+		log.Fatalln("unsupported os")
 	}
 	return hostFilePath
+}
+
+func IsValidHostname(host string) bool {
+	asciiHost, err := idna.ToASCII(host)
+	if err != nil {
+		slog.Error("unable to convert host to ascii", slog.String("error", err.Error()))
+		return false
+	}
+	return hostnameRegex.MatchString(asciiHost)
 }
 
 func ClearHosts() error {
@@ -122,28 +136,4 @@ func UpdateHosts(host string, enable bool) error {
 		return fmt.Errorf("unable to close hosts file on overwrite: %w", err)
 	}
 	return nil
-}
-
-func RunMeElevated() {
-	verb := "runas"
-	exe, _ := os.Executable()
-	cwd, _ := os.Getwd()
-	args := strings.Join(os.Args[1:], " ")
-
-	verbPtr, _ := syscall.UTF16PtrFromString(verb)
-	exePtr, _ := syscall.UTF16PtrFromString(exe)
-	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
-	argPtr, _ := syscall.UTF16PtrFromString(args)
-
-	var showCmd int32 = 1 //SW_NORMAL
-
-	err := windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-func AmAdmin() bool {
-	elevated := windows.GetCurrentProcessToken().IsElevated()
-	return elevated
 }

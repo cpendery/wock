@@ -1,21 +1,25 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/cpendery/wock/admin"
 	"github.com/cpendery/wock/client"
+	"github.com/cpendery/wock/config"
 	"github.com/cpendery/wock/daemon"
+	"github.com/cpendery/wock/hosts"
 	"github.com/cpendery/wock/pipe"
 	"github.com/spf13/cobra"
 )
 
 var (
 	rootCmd = &cobra.Command{
-		Use:   `wock [domain] [directory]`,
+		Use: `wock [domain] [directory] [flags]
+  wock [alias]`,
 		Short: "mock web hosts",
 		Long: `wock - mock the web 
 
@@ -23,7 +27,30 @@ wock is a tool for mocking a host/domain and serving all traffic
 that host locally via http/https.
 
 complete documentation is available at https://github.com/cpendery/wock`,
-		Args:         cobra.ExactArgs(2),
+		Args: func(_ *cobra.Command, args []string) error {
+			switch len(args) {
+			case 0:
+				return errors.New("requires at least one arg")
+			case 1:
+				alias := strings.ToLower(args[0])
+				if !config.IsValidAlias(alias) {
+					return fmt.Errorf("unknown alias %s", alias)
+				}
+				return nil
+			case 2:
+				host := strings.ToLower(args[0])
+				dir := strings.ToLower(args[1])
+				if !hosts.IsValidHostname(host) {
+					return fmt.Errorf("provided host '%s' is an invalid hostname", host)
+				}
+				if _, err := config.IsValidDirectory(dir); err != nil {
+					return err
+				}
+			default:
+				return errors.New("invalid args")
+			}
+			return nil
+		},
 		SilenceUsage: true,
 		RunE:         rootExec,
 	}
@@ -49,42 +76,20 @@ func rootExec(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create client: %w", err)
 		}
 		defer c.Close()
-		host := args[0]
-		dir := args[1]
-		absDir, err := validateDirectory(dir)
-		if err != nil {
-			return err
+		var host, dir string
+		if len(args) == 1 {
+			host, dir = config.GetAlias(args[0])
+		} else {
+			host = args[0]
+			dir = args[1]
 		}
+		absDir, _ := config.IsValidDirectory(dir)
 		err = c.Mock(host, *absDir)
 		if err != nil {
 			return fmt.Errorf("failed to mock host %s: %w", host, err)
 		}
 	}
 	return nil
-}
-
-func validateDirectory(userInput string) (*string, error) {
-	var dir string
-	if filepath.IsAbs(userInput) {
-		dir = userInput
-	} else {
-		wd, err := os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("unable to check working directory: %w", err)
-		}
-		dir = filepath.Join(wd, userInput)
-	}
-
-	fileinfo, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("unable to serve %s as it doesn't exist", dir)
-	} else if err != nil {
-		return nil, fmt.Errorf("unable to validate directory exists: %w", err)
-	} else if !fileinfo.IsDir() {
-		return nil, fmt.Errorf("unable to serve %s as it isn't a directory", dir)
-	} else {
-		return &dir, nil
-	}
 }
 
 func Execute() {
