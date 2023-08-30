@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/adrg/xdg"
 	"github.com/cpendery/wock/cert"
 	"github.com/cpendery/wock/hosts"
 	"github.com/cpendery/wock/model"
@@ -25,6 +27,22 @@ type Daemon struct {
 	lock        sync.RWMutex
 	serverHttp  http.Server
 	serverHttps http.Server
+}
+
+var (
+	WockDaemonLogFile = filepath.Join(xdg.CacheHome, "wock", "daemon-logs.txt")
+)
+
+func setupDaemonLogging() {
+	if err := create(WockDaemonLogFile); err != nil {
+		log.Fatalln("failed to clear wock daemon log file")
+	}
+	f, err := os.Create(WockDaemonLogFile)
+	if err != nil {
+		log.Fatalln("failed to open wock daemon log file")
+	}
+	logger := slog.New(slog.NewTextHandler(f, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
 }
 
 func (d *Daemon) sendMessage(msg model.Message, clientId string, conn net.Conn) error {
@@ -253,8 +271,6 @@ func (d *Daemon) handleClient(c net.Conn) {
 }
 
 func NewDaemon() *Daemon {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	slog.SetDefault(logger)
 	return &Daemon{
 		mockedHosts: make(map[string]model.MockedHost),
 		lock:        sync.RWMutex{},
@@ -268,6 +284,7 @@ func NewDaemon() *Daemon {
 }
 
 func (d *Daemon) Start() {
+	setupDaemonLogging()
 	slog.Debug("starting daemon")
 	l, err := pipe.ServerListen()
 	if err != nil {

@@ -17,5 +17,6 @@ var installCmd = &cobra.Command{
 }
 
 func runInstallCmd(_ *cobra.Command, _ []string) error {
+	cert.SetVerbose(verboseLogging)
 	return cert.Install()
 }

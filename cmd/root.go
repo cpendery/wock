@@ -54,7 +54,12 @@ complete documentation is available at https://github.com/cpendery/wock`,
 		SilenceUsage: true,
 		RunE:         rootExec,
 	}
+	verboseLogging bool
 )
+
+func init() {
+	rootCmd.PersistentFlags().BoolVarP(&verboseLogging, "verbose", "v", false, "enable verbose logging")
+}
 
 func startDaemon() {
 	daemonRunning := pipe.IsOpen()

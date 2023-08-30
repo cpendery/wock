@@ -17,5 +17,6 @@ var uninstallCmd = &cobra.Command{
 }
 
 func runUninstallCmd(_ *cobra.Command, _ []string) error {
+	cert.SetVerbose(verboseLogging)
 	return cert.Uninstall()
 }
