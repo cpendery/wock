@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/cpendery/wock/admin"
 	"github.com/cpendery/wock/client"
@@ -13,13 +12,14 @@ import (
 	"github.com/cpendery/wock/daemon"
 	"github.com/cpendery/wock/hosts"
 	"github.com/cpendery/wock/pipe"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 var (
 	rootCmd = &cobra.Command{
 		Use: `wock [domain] [directory] [flags]
-  wock [alias]`,
+  wock [alias] [flags]`,
 		Short: "mock web hosts",
 		Long: `wock - mock the web 
 
@@ -62,7 +62,7 @@ func init() {
 }
 
 func startDaemon() {
-	daemonRunning := pipe.IsOpen()
+	daemonRunning := pipe.IsServerPipeOpen()
 	if !daemonRunning && !admin.IsAdmin() {
 		admin.RunAsElevated()
 	}
@@ -73,8 +73,7 @@ func startDaemon() {
 
 func rootExec(cmd *cobra.Command, args []string) error {
 	startDaemon()
-	time.Sleep(1 * time.Second)
-	daemonRunning := pipe.IsOpen()
+	daemonRunning := pipe.IsServerPipeOpen()
 	if !admin.IsAdmin() && daemonRunning {
 		c, err := client.NewClient()
 		if err != nil {
@@ -93,6 +92,7 @@ func rootExec(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to mock host %s: %w", host, err)
 		}
+		fmt.Printf("mocking host '%s' with files from %s\n", color.MagentaString(host), color.BlueString(*absDir))
 	}
 	return nil
 }

@@ -3,8 +3,11 @@
 package pipe
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"syscall"
+	"time"
 )
 
 const (
@@ -13,29 +16,43 @@ const (
 )
 
 func DialServer() (net.Conn, error) {
+	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(timeout))
+	defer cancelCtx()
+	if err := waitForFile(wockSocket, ctx); err != nil {
+		return nil, err
+	}
 	return net.Dial("unix", wockSocket)
 }
 
 func DialClient(clientId string) (net.Conn, error) {
-	return net.Dial("unix", fmt.Sprintf("%s-%s.sock", wockClientSocketPrefix, clientId))
+	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(timeout))
+	defer cancelCtx()
+	clientSocket := fmt.Sprintf("%s-%s.sock", wockClientSocketPrefix, clientId)
+	if err := waitForFile(clientSocket, ctx); err != nil {
+		return nil, err
+	}
+	return net.Dial("unix", clientSocket)
 }
 
 func ServerListen() (net.Listener, error) {
-	return net.Listen("unix", wockSocket)
+	oldUmask := syscall.Umask(0)
+	listener, err := net.Listen("unix", wockSocket)
+	syscall.Umask(oldUmask)
+	return listener, err
 }
 
 func ClientListen(clientId string) (net.Listener, error) {
-	return net.Listen("unix", fmt.Sprintf("%s-%s.sock", wockClientSocketPrefix, clientId))
+	oldUmask := syscall.Umask(0)
+	listener, err := net.Listen("unix", fmt.Sprintf("%s-%s.sock", wockClientSocketPrefix, clientId))
+	syscall.Umask(oldUmask)
+	return listener, err
 }
 
-func IsOpen() bool {
+func IsServerPipeOpen() bool {
 	l, err := net.Listen("unix", wockSocket)
 	if err != nil {
 		return true
 	}
 	err = l.Close()
-	if err != nil {
-
-	}
-	return false
+	return err != nil
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/cpendery/wock/admin"
 	"github.com/cpendery/wock/client"
@@ -23,7 +22,6 @@ var clearCmd = &cobra.Command{
 func runClearCommand(_ *cobra.Command, _ []string) error {
 	startDaemon()
 	if !admin.IsAdmin() {
-		time.Sleep(1 * time.Second)
 		c, err := client.NewClient()
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
