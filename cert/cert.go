@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/adrg/xdg"
 	"github.com/cpendery/mkcert"
@@ -20,7 +21,8 @@ var (
 )
 
 const (
-	mkcertLogPrefix = "[mkcert] "
+	mkcertLogPrefix           = "[mkcert] "
+	wockUnsafeInstallVariable = "WOCK_UNSAFE_INSTALL"
 )
 
 func SetVerbose(verbose bool) {
@@ -42,8 +44,12 @@ func tearDownLogging() {
 func Install() error {
 	setupLogging()
 	defer tearDownLogging()
+	b, err := strconv.ParseBool(os.Getenv(wockUnsafeInstallVariable))
+	unsafeInstall := b && err == nil
+
 	cert := mkcert.MKCert{
-		EnabledStores: enabledStores,
+		EnabledStores:                      enabledStores,
+		UnsafeWindowsAdminCertInstallation: unsafeInstall,
 	}
 	cert.Load()
 	nss := cert.CheckNSS()
