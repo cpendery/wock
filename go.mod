@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/adrg/xdg v0.4.0
-	github.com/cpendery/mkcert v0.0.4
+	github.com/cpendery/mkcert v0.0.5
 	github.com/fatih/color v1.15.0
 	github.com/google/uuid v1.3.1
 	github.com/olekukonko/tablewriter v0.0.5

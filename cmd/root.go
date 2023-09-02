@@ -73,8 +73,7 @@ func startDaemon() {
 
 func rootExec(cmd *cobra.Command, args []string) error {
 	startDaemon()
-	daemonRunning := pipe.IsServerPipeOpen()
-	if !admin.IsAdmin() && daemonRunning {
+	if !admin.IsAdmin(){
 		c, err := client.NewClient()
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
