@@ -5,12 +5,16 @@ package admin
 import (
 	"log"
 	"log/slog"
+	"os"
 	"os/user"
 )
 
 const (
 	unixRoot = "root"
-	logger         = log.New(os.Stdout, "", 0)
+)
+
+var (
+	logger = log.New(os.Stdout, "", 0)
 )
 
 func RunAsElevated() {
