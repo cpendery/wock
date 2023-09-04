@@ -1,0 +1,6 @@
+dist/
+wock*
+.pytest_cache/
+__pycache__/
+.vscode/
+Makefile

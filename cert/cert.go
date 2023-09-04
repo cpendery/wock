@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/adrg/xdg"
@@ -41,6 +42,25 @@ func tearDownLogging() {
 	log.Default().SetOutput(os.Stdout)
 }
 
+func IsInstalled() (isInstalled bool) {
+	cert := mkcert.MKCert{
+		EnabledStores: enabledStores,
+	}
+	if err := cert.Load(); err != nil {
+		isInstalled = false
+		return
+	}
+	nss := cert.CheckNSS()
+	platform := cert.CheckPlatform()
+	switch runtime.GOOS {
+	case "darwin", "linux":
+		isInstalled = nss && platform
+	default:
+		isInstalled = platform
+	}
+	return
+}
+
 func Install() error {
 	setupLogging()
 	defer tearDownLogging()
@@ -51,11 +71,13 @@ func Install() error {
 		EnabledStores:                      enabledStores,
 		UnsafeWindowsAdminCertInstallation: unsafeInstall,
 	}
-	cert.Load()
-	nss := cert.CheckNSS()
-	platform := cert.CheckPlatform()
-	if nss && platform {
+	if err := cert.Load(); err != nil {
+		return err
+	}
+	isInstalled := IsInstalled()
+	if isInstalled {
 		logger.Println("Local CA is already installed")
+		return nil
 	}
 	if err := cert.Install(); err != nil {
 		return fmt.Errorf("failed to install local CA: %w", err)

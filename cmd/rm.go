@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"log/slog"
 
 	"github.com/cpendery/wock/client"
@@ -13,7 +12,7 @@ func init() {
 }
 
 var rmCmd = &cobra.Command{
-	Use:   "rm",
+	Use:   "rm [host]",
 	Short: "remove a currently wocked host",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runRmCmd,
@@ -22,7 +21,7 @@ var rmCmd = &cobra.Command{
 func runRmCmd(_ *cobra.Command, args []string) error {
 	c, err := client.NewClient()
 	if err != nil {
-		log.Println("Daemon is offline, no hosts to remove")
+		logger.Println("Daemon is offline, no hosts to remove")
 		return nil
 	}
 	host := args[0]

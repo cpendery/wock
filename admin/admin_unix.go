@@ -10,10 +10,11 @@ import (
 
 const (
 	unixRoot = "root"
+	logger         = log.New(os.Stdout, "", 0)
 )
 
 func RunAsElevated() {
-	log.Println("Please run `sudo wock start` to start the wock daemon as editing hosts files requires elevated permissions")
+	logger.Println("Please run `sudo wock start` to start the wock daemon as editing hosts files requires elevated permissions")
 }
 
 func IsAdmin() bool {

@@ -3,10 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/cpendery/wock/admin"
+	"github.com/cpendery/wock/cert"
 	"github.com/cpendery/wock/client"
 	"github.com/cpendery/wock/config"
 	"github.com/cpendery/wock/daemon"
@@ -55,6 +57,7 @@ complete documentation is available at https://github.com/cpendery/wock`,
 		RunE:         rootExec,
 	}
 	verboseLogging bool
+	logger         = log.New(os.Stdout, "", 0)
 )
 
 func init() {
@@ -72,27 +75,29 @@ func startDaemon() {
 }
 
 func rootExec(cmd *cobra.Command, args []string) error {
-	startDaemon()
-	if !admin.IsAdmin(){
-		c, err := client.NewClient()
-		if err != nil {
-			return fmt.Errorf("failed to create client: %w", err)
-		}
-		defer c.Close()
-		var host, dir string
-		if len(args) == 1 {
-			host, dir = config.GetAlias(args[0])
-		} else {
-			host = args[0]
-			dir = args[1]
-		}
-		absDir, _ := config.IsValidDirectory(dir)
-		err = c.Mock(host, *absDir)
-		if err != nil {
-			return fmt.Errorf("failed to mock host %s: %w", host, err)
-		}
-		fmt.Printf("mocking host '%s' with files from %s\n", color.MagentaString(host), color.BlueString(*absDir))
+	if !cert.IsInstalled() {
+		return errors.New("local CA is not installed, run `wock install` to install the CA")
 	}
+
+	startDaemon()
+	c, err := client.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer c.Close()
+	var host, dir string
+	if len(args) == 1 {
+		host, dir = config.GetAlias(args[0])
+	} else {
+		host = args[0]
+		dir = args[1]
+	}
+	absDir, _ := config.IsValidDirectory(dir)
+	err = c.Mock(host, *absDir)
+	if err != nil {
+		return fmt.Errorf("failed to mock host %s: %w", host, err)
+	}
+	fmt.Printf("mocking host '%s' with files from %s\n", color.MagentaString(host), color.BlueString(*absDir))
 	return nil
 }
 

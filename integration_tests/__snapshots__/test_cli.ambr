@@ -1,0 +1,9 @@
+# name: test_clear
+  b'<!DOCTYPE html>\r\n<html>\r\n\r\n<head>\r\n    <title>nytimes</title>\r\n</head>\r\n\r\n<body>\r\n\r\n    <h1>This is a Heading</h1>\r\n    <p>This is a paragraph.</p>\r\n\r\n</body>\r\n\r\n</html>'
+# ---
+# name: test_clear.1
+  b'<!DOCTYPE html>\r\n<html>\r\n\r\n<head>\r\n    <title>nytimes</title>\r\n</head>\r\n\r\n<body>\r\n\r\n    <h1>This is a Heading</h1>\r\n    <p>This is a paragraph.</p>\r\n\r\n</body>\r\n\r\n</html>'
+# ---
+# name: test_host_successful
+  b'<!DOCTYPE html>\r\n<html>\r\n\r\n<head>\r\n    <title>nytimes</title>\r\n</head>\r\n\r\n<body>\r\n\r\n    <h1>This is a Heading</h1>\r\n    <p>This is a paragraph.</p>\r\n\r\n</body>\r\n\r\n</html>'
+# ---

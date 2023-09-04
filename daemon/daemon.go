@@ -97,14 +97,6 @@ func (d *Daemon) handleMessage(msg model.Message) {
 			return
 		}
 		slog.Debug("updated mocked hosts")
-		if err := d.sendMessage(
-			model.Message{MsgType: model.SuccessMessage},
-			msg.ClientId,
-			conn,
-		); err != nil {
-			slog.Error("failed to response to a mock message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
-			return
-		}
 		d.mockedHosts[host] = model.MockedHost{Host: host, Directory: mockMessageData.Directory}
 
 		slog.Debug("starting server http/s shutdowns")
@@ -123,6 +115,15 @@ func (d *Daemon) handleMessage(msg model.Message) {
 		}
 		go d.httpServer()
 		go d.httpsServer()
+
+		if err := d.sendMessage(
+			model.Message{MsgType: model.SuccessMessage},
+			msg.ClientId,
+			conn,
+		); err != nil {
+			slog.Error("failed to response to a mock message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
+			return
+		}
 	case model.ClearMessage:
 		slog.Debug("received clear message")
 		hosts.ClearHosts()
