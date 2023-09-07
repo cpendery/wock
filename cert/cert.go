@@ -54,7 +54,11 @@ func IsInstalled() (isInstalled bool) {
 	platform := cert.CheckPlatform()
 	switch runtime.GOOS {
 	case "darwin", "linux":
-		isInstalled = nss && platform
+		if cert.HasNSS() {
+			isInstalled = nss && platform
+		} else {
+			isInstalled = platform
+		}
 	default:
 		isInstalled = platform
 	}
