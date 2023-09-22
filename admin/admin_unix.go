@@ -3,10 +3,15 @@
 package admin
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/user"
+	"time"
+
+	"github.com/cpendery/wock/pipe"
 )
 
 const (
@@ -18,7 +23,21 @@ var (
 )
 
 func RunAsElevated() {
-	logger.Println("Please run `sudo wock start` to start the wock daemon as editing hosts files requires elevated permissions")
+	cmd := exec.Command("sudo", os.Args...)
+	if err := cmd.Start(); err != nil {
+		fmt.Println(err)
+		return
+	}
+	timeout := 30 * time.Second
+	conn, err := pipe.DialServer(&timeout)
+	if err != nil {
+		fmt.Println(err)
+		if cmd.Cancel != nil {
+			defer cmd.Cancel()
+		}
+	} else {
+		defer conn.Close()
+	}
 }
 
 func IsAdmin() bool {

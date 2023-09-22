@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	timeout = 1 * time.Second
+	defaultTimeout = 1 * time.Second
 )
 
 func waitForFile(filePath string, ctx context.Context) error {
