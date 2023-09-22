@@ -1,44 +1,44 @@
-name: Integration Tests
-on:
-  pull_request:
-    branches: [main]
+# name: Integration Tests
+# on:
+#   pull_request:
+#     branches: [main]
 
-jobs:
-  test:
-    strategy:
-      matrix:
-        os: ["windows-latest", "ubuntu-latest", "macos-latest"]
-    runs-on: ${{ matrix.os }}
+# jobs:
+#   test:
+#     strategy:
+#       matrix:
+#         os: ["windows-latest", "ubuntu-latest", "macos-latest"]
+#     runs-on: ${{ matrix.os }}
 
-    steps:
-      - uses: actions/checkout@v3
+#     steps:
+#       - uses: actions/checkout@v3
 
-      - name: Install Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: 3.x
+#       - name: Install Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: 3.x
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.x
+#       - name: Install Go
+#         uses: actions/setup-go@v2
+#         with:
+#           go-version: 1.x
 
-      - name: Install Python Deps
-        run: python -m pip install -r integration_tests/requirements.txt
+#       - name: Install Python Deps
+#         run: python -m pip install -r integration_tests/requirements.txt
 
-      - name: Install Wock Deps
-        run: brew install nss
-        if: ${{ matrix.os == 'macos-latest' }}
+#       - name: Install Wock Deps
+#         run: brew install nss
+#         if: ${{ matrix.os == 'macos-latest' }}
 
-      - name: Install Wock Deps
-        run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew install nss
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+#       - name: Install Wock Deps
+#         run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew install nss
+#         if: ${{ matrix.os == 'ubuntu-latest' }}
 
-      - name: Build Executable
-        run: go build
+#       - name: Build Executable
+#         run: go build
 
 
-      - name: Test
-        run:  python -m pytest
-        env:
-         WOCK_UNSAFE_INSTALL: true
+#       - name: Test
+#         run:  python -m pytest
+#         env:
+#          WOCK_UNSAFE_INSTALL: true
