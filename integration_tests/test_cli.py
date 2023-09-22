@@ -11,7 +11,13 @@ html_dir = path.join("integration_tests", "html")
 @pytest.fixture
 def command():
     plat = platform.system()
-    return "wock" if plat == "Linux" or plat == "Darwin" else "wock.exe"
+    return "./wock" if plat == "Linux" or plat == "Darwin" else "wock.exe"
+
+
+@pytest.fixture
+def admin_command():
+    plat = platform.system()
+    return ["sudo", "./wock"] if plat == "Linux" or plat == "Darwin" else ["wock.exe"]
 
 
 @pytest.mark.parametrize(
@@ -42,12 +48,12 @@ def test_commands_when_uninstalled(command, args, expected, expected_status):
         assert expected in result.stderr
 
 
-def test_start(command):
+def test_start(command, admin_command):
     result = subprocess.run([command, "status"], capture_output=True, text=True)
     assert "[offline]" in result.stdout
 
     subprocess.Popen(
-        [command, "start"],
+        [*admin_command, "start"],
         shell=False,
         stdin=None,
         stdout=None,
@@ -59,8 +65,8 @@ def test_start(command):
     assert "[online]" in result.stdout
 
 
-def test_install(command):
-    result = subprocess.run([command, "install"], capture_output=True, text=True)
+def test_install(admin_command):
+    result = subprocess.run([*admin_command, "install"], capture_output=True, text=True)
     assert result.returncode == 0
     assert "Successfully installed/verified local CA" in result.stdout
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	winio "github.com/Microsoft/go-winio"
@@ -15,8 +16,12 @@ const (
 	wockServerPipe = `\\.\pipe\wock`
 )
 
-func DialServer() (net.Conn, error) {
-	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(timeout))
+func DialServer(timeout *time.Duration) (net.Conn, error) {
+	dialTimeout := defaultTimeout
+	if timeout != nil {
+		dialTimeout = *timeout
+	}
+	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(dialTimeout))
 	defer cancelCtx()
 	if err := waitForFile(wockServerPipe, ctx); err != nil {
 		return nil, err
@@ -25,7 +30,7 @@ func DialServer() (net.Conn, error) {
 }
 
 func DialClient(clientId string) (net.Conn, error) {
-	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(timeout))
+	ctx, cancelCtx := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 	defer cancelCtx()
 
 	clientPipe := fmt.Sprintf("%s-%s", wockServerPipe, clientId)
@@ -41,6 +46,10 @@ func ServerListen() (net.Listener, error) {
 
 func ClientListen(clientId string) (net.Listener, error) {
 	return winio.ListenPipe(fmt.Sprintf("%s-%s", wockServerPipe, clientId), &winio.PipeConfig{SecurityDescriptor: "D:P(A;;GA;;;AU)"})
+}
+
+func Teardown() error {
+	return os.Remove(wockServerPipe)
 }
 
 func IsServerPipeOpen() bool {

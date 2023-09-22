@@ -147,6 +147,7 @@ func (d *Daemon) handleMessage(msg model.Message) {
 		); err != nil {
 			slog.Error("failed to response to a stop message", slog.String("clientId", msg.ClientId), slog.String("error", err.Error()))
 		}
+		pipe.Teardown()
 		os.Exit(0)
 	case model.UnmockMessage:
 		slog.Debug("received unmock message")

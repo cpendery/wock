@@ -33,7 +33,7 @@ type Client struct {
 
 func NewClient() (*Client, error) {
 	clientId := uuid.NewString()
-	serverConnection, err := pipe.DialServer()
+	serverConnection, err := pipe.DialServer(nil)
 	if err != nil {
 		slog.Debug("unable to dial daemon", slog.String("error", err.Error()))
 		return nil, ErrUnableToDialDaemon
